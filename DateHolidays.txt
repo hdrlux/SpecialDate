@@ -1,0 +1,138 @@
+// paste 'Power Query M code' in Power BI 'Blank Query' in 'Advanced Editor window'
+// needs "DateTable" in same file
+// table name: "DateHolidays"
+// add Bi-directional Many-to-1 relationship via date column to "DateTable"
+// hide Date column
+// Type A: fixed date in year [always the same day-month]
+// Type B: related to Easter in Gregorian calendar [NOT for orthodox in Julian calendar]
+// Type C: last weekday in month
+// Type D: weekday number in month
+// Type E: fixed days after defined day
+// Type F: fixed weekday after date
+let
+    Source = DateTable,
+    MinYear = Date.Year(List.Min(Source[Date])),
+    MaxYear = Date.Year(List.Max(Source[Date])),
+    ListYear = List.Numbers(MinYear, (MaxYear - MinYear + 1), 1),
+    TableYear = Table.FromList(ListYear, Splitter.SplitByNothing(), {"Year"}, null, ExtraValues.Ignore),
+    NumberType = Table.TransformColumnTypes(TableYear,{{"Year", Int64.Type}}),
+    // Valid for Years 1900..2099, Gregorian calendar
+    Easter = Table.AddColumn(NumberType, "EasterSunday", each let
+        n = [Year] - 1900, 
+        a = Number.Mod(n, 19),
+        b = Number.IntegerDivide((7*a+1), 19), 
+        m = Number.Mod((11*a+4-b), 29),
+        q = Number.IntegerDivide(n, 4),
+        w = Number.Mod((n+q+31-m), 7),
+        Easter = 25-m-w,
+        Month = if Easter < 1 then 3 else 4,
+        Day = if Easter < 1 then Easter + 31 else Easter,
+        EasterSunday = #date([Year], Month, Day)
+    in
+        EasterSunday, Date.Type),
+    // day after Easter
+    EasterMonday = Table.AddColumn(Easter, "EasterMonday", each Date.AddDays([EasterSunday], 1), Date.Type),
+    // 7 weeks after Easter
+    WhitSunday = Table.AddColumn(EasterMonday, "WhitSunday", each Date.AddDays([EasterSunday], 49), Date.Type),
+    // day after WhitSunday
+    WhitMonday = Table.AddColumn(WhitSunday, "WhitMonday", each Date.AddDays([EasterSunday], 50), Date.Type),
+    // 10 days before WhitSunday
+    AscensionThursday = Table.AddColumn(WhitMonday, "AscensionThursday", each Date.AddDays([EasterSunday], 39), Date.Type),
+    // 7 weeks before Easter
+    Carnaval = Table.AddColumn(AscensionThursday, "Carnaval", each Date.AddDays([EasterSunday], -49), Date.Type),
+    // 1st in January
+    NewYearsDay = Table.AddColumn(Carnaval, "NewYearsDay", each #date([Year], 1, 1), Date.Type),
+    // 25th in December
+    Christmas = Table.AddColumn(NewYearsDay, "Christmas", each #date([Year], 12, 25), Date.Type),
+    // 4th Thursday in November
+    ThanksgivingUS = Table.AddColumn(Christmas, "ThanksgivingUS", each let
+        // 1..4 = 1st..4th
+        DayInMonth = 4,
+        // 1..7 = Mon..Sun
+        WeekDay = 4,
+        // 1..12 = Jan..Dec
+        Month = 11,
+        FistOfMonth = #date([Year], Month, 1),
+        FirstWeekday = Date.DayOfWeek(FistOfMonth, Day.Monday) + 1,
+        Offset = if FirstWeekday > WeekDay then FirstWeekday - 7 else FirstWeekday,
+        ThanksgivingUS = Date.AddDays(FistOfMonth, (WeekDay - Offset + ((DayInMonth - 1) * 7)))
+    in
+        ThanksgivingUS, Date.Type),
+    // day after Thanksgiving
+    BlackFriday = Table.AddColumn(ThanksgivingUS, "BlackFriday", each Date.AddDays([ThanksgivingUS], 1), Date.Type),
+    // 2nd Sunday in May
+    MothersDay = Table.AddColumn(BlackFriday, "MothersDay", each let
+        // 1..4 = 1st..4th
+        DayInMonth = 2,
+        // 1..7 = Mon..Sun
+        WeekDay = 7,
+        // 1..12 = Jan..Dec
+        Month = 5,
+        FistOfMonth = #date([Year], Month, 1),
+        FirstWeekday = Date.DayOfWeek(FistOfMonth, Day.Monday) + 1,
+        Offset = if FirstWeekday > WeekDay then FirstWeekday - 7 else FirstWeekday,
+        MothersDay = Date.AddDays(FistOfMonth, (WeekDay - Offset + ((DayInMonth - 1) * 7)))
+    in
+        MothersDay, Date.Type),
+    // last Monday in May
+    MemorialDay = Table.AddColumn(MothersDay, "MemorialDay", each let
+        // 1..7 = Mon..Sun
+        WeekDay = 1,
+        // 1..12 = Jan..Dec
+        Month = 5,
+        NextMonth = Date.AddMonths(#date([Year], Month, 1), 1),
+        MemorialDay = Date.AddDays(NextMonth, - Date.DayOfWeek(Date.AddDays(NextMonth, (8 - WeekDay)), Day.Monday))
+    in
+        MemorialDay, Date.Type),
+    // last Sunday in March
+    SummertimeEU = Table.AddColumn(MemorialDay, "SummertimeEU", each let
+        // 1..7 = Mon..Sun
+        WeekDay = 7,
+        // 1..12 = Jan..Dec
+        Month = 3,
+        NextMonth = Date.AddMonths(#date([Year], Month, 1), 1),
+        SummertimeEU = Date.AddDays(NextMonth, - Date.DayOfWeek(Date.AddDays(NextMonth, (8 - WeekDay)), Day.Monday))
+    in
+        SummertimeEU, Date.Type),
+    // last Sunday in October
+    WintertimeEU = Table.AddColumn(SummertimeEU, "WintertimeEU", each let
+        // 1..7 = Mon..Sun
+        WeekDay = 7,
+        // 1..12 = Jan..Dec
+        Month = 10,
+        NextMonth = Date.AddMonths(#date([Year], Month, 1), 1),
+        WintertimeEU = Date.AddDays(NextMonth, - Date.DayOfWeek(Date.AddDays(NextMonth, (8 - WeekDay)), Day.Monday))
+    in
+        WintertimeEU, Date.Type),
+    // first Saturday after 15th of September, 12:00 in Munich
+    OktoberfestStart = Table.AddColumn(WintertimeEU, "OktoberfestStart", each let
+        // 1..7 = Mon..Sun
+        WeekDay = 6,
+        // 1..31
+        Day = 15,        
+        // 1..12 = Jan..Dec
+        Month = 9,
+        FromDate = #date([Year], Month, Day),
+        WeekdayFromDate = Date.DayOfWeek(FromDate, Day.Monday) + 1,
+        OktoberfestStart = Date.AddDays(FromDate, WeekDay - WeekdayFromDate + (if WeekdayFromDate>=WeekDay then 7 else 0))
+    in
+        OktoberfestStart, Date.Type),
+    // valid from 2014, 27th in April but not Sundays, Orange day in Amsterdam
+    DutchKingsday = Table.AddColumn(OktoberfestStart, "DutchKingsday", each let
+        // 1..7 = Mon..Sun
+        NotWeekDay = 7,
+        // 1..31
+        Day = 27,        
+        // 1..12 = Jan..Dec
+        Month = 4,
+        KingsTemp = #date([Year], Month, Day),
+        DutchKingsday = if NotWeekDay = Date.DayOfWeek(KingsTemp, Day.Monday) + 1 then Date.AddDays(KingsTemp, -1) else KingsTemp
+    in
+        DutchKingsday, Date.Type),
+    RemovedColumns = Table.RemoveColumns(DutchKingsday,{"Year"}),
+    UnpivotedColumns = Table.UnpivotOtherColumns(RemovedColumns, {}, "Holiday", "Date"),
+    ChangedType = Table.TransformColumnTypes(UnpivotedColumns,{{"Date", type date}}),
+    Sort = Table.Sort(ChangedType,{"Date", Order.Ascending})
+in
+    Sort
+// end

@@ -1,0 +1,35 @@
+// paste 'Power Query M code' in Power BI 'Blank Query' in 'Advanced Editor window'
+// needs "DateTable" in same file
+// table name: "DatePeriods"
+// add Bi-directional Many-to-1 relationship via date column to "DateTable"
+// hide Date column
+let
+    Source = DateTable,
+    // Updates on next Refresh
+    Today =  DateTime.Date( DateTime.LocalNow() ),
+    Today_Year = Date.Year( Today ),
+    Today_Month = Date.Month( Today ),
+    // Use Offset values to create custom Periods
+    YearOffset = Table.AddColumn(Source, "YearOffset", each [Year] - Today_Year, Int64.Type),
+    MonthOffset = Table.AddColumn(YearOffset, "MonthOffset", each 12 * ([Year] - Today_Year) + [Month] - Today_Month, Int64.Type),
+    ISOweekOffset = Table.AddColumn(MonthOffset, "ISOWeekOffset", each (Duration.Days([Date] - Today ) - Date.DayOfWeek([Date], Day.Monday) + Date.DayOfWeek(Today, Day.Monday)) / 7, Int64.Type),
+    DayOffset = Table.AddColumn(ISOweekOffset, "DayOffset", each Duration.Days([Date] - Today), Int64.Type),
+    //Add your custom Periods here
+    CombinedPeriods = Table.Combine({
+        Table.AddColumn(Table.SelectRows(DayOffset, each ([DayOffset] = 0)), "Period", each "Today", Text.Type),
+        Table.AddColumn(Table.SelectRows(DayOffset, each ([DayOffset] = -1)), "Period", each "Yesterday", Text.Type),
+        Table.AddColumn(Table.SelectRows(DayOffset, each ([ISOWeekOffset] = 0)), "Period", each "This ISOweek", Text.Type),
+        Table.AddColumn(Table.SelectRows(DayOffset, each ([ISOWeekOffset] = -1)), "Period", each "Last ISOweek", Text.Type),
+        Table.AddColumn(Table.SelectRows(DayOffset, each ([ISOWeekOffset] <= -1 and [ISOWeekOffset] >= -4)), "Period", each "Last 4 ISOweek", Text.Type),
+        Table.AddColumn(Table.SelectRows(DayOffset, each ([ISOWeekOffset] <= -1 and [ISOWeekOffset] >= -8)), "Period", each "Last 8 ISOweek", Text.Type),
+        Table.AddColumn(Table.SelectRows(DayOffset, each ([ISOWeekOffset] <= -1 and [ISOWeekOffset] >= -13)), "Period", each "Last 13 ISOweek", Text.Type),
+        Table.AddColumn(Table.SelectRows(DayOffset, each ([ISOWeekOffset] >= 1 and [ISOWeekOffset] <= 4)), "Period", each "Next 4 ISOweek", Text.Type),
+        Table.AddColumn(Table.SelectRows(DayOffset, each ([MonthOffset] = 0)), "Period", each "This Month", Text.Type),
+        Table.AddColumn(Table.SelectRows(DayOffset, each ([MonthOffset] = -1)), "Period", each "Last Month", Text.Type),
+        Table.AddColumn(Table.SelectRows(DayOffset, each ([MonthOffset] <= -1 and [MonthOffset] >= -8)), "Period", each "Last 8 Month", Text.Type)
+    }),
+    DeleteColumns = Table.SelectColumns(CombinedPeriods,{"Date", "Period"}),
+    Sort = Table.Sort(DeleteColumns,{"Date", Order.Ascending})
+in
+    Sort
+// end
