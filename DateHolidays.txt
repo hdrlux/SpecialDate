@@ -117,19 +117,7 @@ let
         OktoberfestStart = Date.AddDays(FromDate, WeekDay - WeekdayFromDate + (if WeekdayFromDate>=WeekDay then 7 else 0))
     in
         OktoberfestStart, Date.Type),
-    // valid from 2014, 27th in April but not Sundays, Orange day in Amsterdam
-    DutchKingsday = Table.AddColumn(OktoberfestStart, "DutchKingsday", each let
-        // 1..7 = Mon..Sun
-        NotWeekDay = 7,
-        // 1..31
-        Day = 27,        
-        // 1..12 = Jan..Dec
-        Month = 4,
-        KingsTemp = #date([Year], Month, Day),
-        DutchKingsday = if NotWeekDay = Date.DayOfWeek(KingsTemp, Day.Monday) + 1 then Date.AddDays(KingsTemp, -1) else KingsTemp
-    in
-        DutchKingsday, Date.Type),
-    RemovedColumns = Table.RemoveColumns(DutchKingsday,{"Year"}),
+    RemovedColumns = Table.RemoveColumns(OktoberfestStart,{"Year"}),
     UnpivotedColumns = Table.UnpivotOtherColumns(RemovedColumns, {}, "Holiday", "Date"),
     ChangedType = Table.TransformColumnTypes(UnpivotedColumns,{{"Date", type date}}),
     Sort = Table.Sort(ChangedType,{"Date", Order.Ascending})
