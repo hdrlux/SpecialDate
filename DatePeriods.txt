@@ -9,6 +9,7 @@ let
     Today =  DateTime.Date( DateTime.LocalNow() ),
     Today_Year = Date.Year( Today ),
     Today_Month = Date.Month( Today ),
+    Today_Day = Date.Day( Today ),
     // Use Offset values to create custom Periods
     YearOffset = Table.AddColumn(Source, "YearOffset", each [Year] - Today_Year, Int64.Type),
     MonthOffset = Table.AddColumn(YearOffset, "MonthOffset", each 12 * ([Year] - Today_Year) + [Month] - Today_Month, Int64.Type),
@@ -26,7 +27,10 @@ let
         Table.AddColumn(Table.SelectRows(DayOffset, each ([ISOWeekOffset] >= 1 and [ISOWeekOffset] <= 4)), "Period", each "Next 4 ISOweek", Text.Type),
         Table.AddColumn(Table.SelectRows(DayOffset, each ([MonthOffset] = 0)), "Period", each "This Month", Text.Type),
         Table.AddColumn(Table.SelectRows(DayOffset, each ([MonthOffset] = -1)), "Period", each "Last Month", Text.Type),
-        Table.AddColumn(Table.SelectRows(DayOffset, each ([MonthOffset] <= -1 and [MonthOffset] >= -8)), "Period", each "Last 8 Month", Text.Type)
+        Table.AddColumn(Table.SelectRows(DayOffset, each ([MonthOffset] <= -1 and [MonthOffset] >= -8)), "Period", each "Last 8 Month", Text.Type),
+        Table.AddColumn(Table.SelectRows(DayOffset, each ([YearOffset] = 0)), "Period", each "This Year", Text.Type),
+        Table.AddColumn(Table.SelectRows(DayOffset, each ([YearOffset] = -1)), "Period", each "Last Year", Text.Type),
+        Table.AddColumn(Table.SelectRows(DayOffset, each ([Month] < Today_Month) or ([Month] = Today_Month and [Day] < Today_Day)), "Period", each "YTD each Year", Text.Type)        
     }),
     DeleteColumns = Table.SelectColumns(CombinedPeriods,{"Date", "Period"}),
     Sort = Table.Sort(DeleteColumns,{"Date", Order.Ascending})
