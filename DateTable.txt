@@ -4,7 +4,7 @@
 // add Single-direction relationship via date column to your tables with business data
 let    
     // years back [sales, minimum 1]
-    YearsHistory = 10,
+    YearsHistory = 2,
     // years forward [forecast, minimum 1]
     YearsFuture = 1,
     DateLanguage = "Dutch",
