@@ -7,9 +7,10 @@ let
     YearsHistory = 2,
     // years forward [forecast, minimum 1]
     YearsFuture = 1,
-    DateLanguage = "Dutch",
+    //Language for 'Local columns', not for Date or ddd-dd column
+    DateLanguage = "LocalLang",
     // Microsoft Local names - Language Tag BCP 47 like: "en-US" "nl-NL" "zh-CN"    
-    Local = if (DateLanguage) = "Dutch" then "nl-NL" else "en-US",
+    Local = if (DateLanguage) = "LocalLang" then "nl-NL" else "en-US",
     // Updates on next Refresh
     Today =  DateTime.Date( DateTime.LocalNow() ),
     Today_Year = Date.Year( Today ),
