@@ -52,10 +52,10 @@ let
         WeekDay = 4,
         // 1..12 = Jan..Dec
         Month = 11,
-        FistOfMonth = #date([Year], Month, 1),
-        FirstWeekday = Date.DayOfWeek(FistOfMonth, Day.Monday) + 1,
+        FirstOfMonth = #date([Year], Month, 1),
+        FirstWeekday = Date.DayOfWeek(FirstOfMonth, Day.Monday) + 1,
         Offset = if FirstWeekday > WeekDay then FirstWeekday - 7 else FirstWeekday,
-        ThanksgivingUS = Date.AddDays(FistOfMonth, (WeekDay - Offset + ((DayInMonth - 1) * 7)))
+        ThanksgivingUS = Date.AddDays(FirstOfMonth, (WeekDay - Offset + ((DayInMonth - 1) * 7)))
     in
         ThanksgivingUS, Date.Type),
     // day after Thanksgiving
@@ -68,10 +68,10 @@ let
         WeekDay = 7,
         // 1..12 = Jan..Dec
         Month = 5,
-        FistOfMonth = #date([Year], Month, 1),
-        FirstWeekday = Date.DayOfWeek(FistOfMonth, Day.Monday) + 1,
+        FirstOfMonth = #date([Year], Month, 1),
+        FirstWeekday = Date.DayOfWeek(FirstOfMonth, Day.Monday) + 1,
         Offset = if FirstWeekday > WeekDay then FirstWeekday - 7 else FirstWeekday,
-        MothersDay = Date.AddDays(FistOfMonth, (WeekDay - Offset + ((DayInMonth - 1) * 7)))
+        MothersDay = Date.AddDays(FirstOfMonth, (WeekDay - Offset + ((DayInMonth - 1) * 7)))
     in
         MothersDay, Date.Type),
     // last Monday in May
