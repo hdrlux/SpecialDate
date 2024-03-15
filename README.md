@@ -11,6 +11,6 @@ Read comment in the 3 txt files. Paste the code in your Power BI report. Easy to
 
 !! Refresh daily for accurate Dates, if you update external data the datetables are recalculated.
 
-![Modelview.png](Modelview.png)
+![modelview.png](modelview.png)
 
 ![Reportview.png](Reportview.png)
