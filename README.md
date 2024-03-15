@@ -11,6 +11,10 @@ Read comment in the 3 txt files. Paste the code in your Power BI report. Easy to
 
 !! Refresh daily for accurate Dates, if you update external data the datetables are recalculated.
 
+Reads Google Public icalendar Holidays [usually 3 years, 1 year past/future]
+
 ![modelview.png](modelview.png)
 
 ![Reportview.png](Reportview.png)
+
+![GooglePublicCalendar.png](GooglePublicCalendar.png)
